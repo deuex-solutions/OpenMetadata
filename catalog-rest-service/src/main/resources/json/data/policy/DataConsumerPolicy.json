@@ -4,6 +4,7 @@
   "fullyQualifiedName": "DataConsumerPolicy",
   "description": "Policy for Data Consumer to perform operations on metadata entities",
   "policyType": "AccessControl",
+  "enabled": true,
   "rules": [
     {
       "name": "DataConsumerPolicy-UpdateDescription",

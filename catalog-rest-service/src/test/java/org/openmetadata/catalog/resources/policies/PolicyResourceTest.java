@@ -173,12 +173,19 @@ public class PolicyResourceTest extends EntityResourceTest<Policy, CreatePolicy>
   void patch_PolicyAttributes_200_ok(TestInfo test) throws IOException {
     Policy policy = createAndCheckEntity(createRequest(test), ADMIN_AUTH_HEADERS).withLocation(null);
 
+    // Set enabled to false
+    String origJson = JsonUtils.pojoToJson(policy);
+    policy.setEnabled(false);
+    ChangeDescription change = getChangeDescription(policy.getVersion());
+    change.getFieldsUpdated().add(new FieldChange().withName("enabled").withOldValue(true).withNewValue(false));
+    policy = patchEntityAndCheck(policy, origJson, ADMIN_AUTH_HEADERS, MINOR_UPDATE, change);
+
     EntityReference locationReference = location.getEntityReference();
 
     // Add new field location
-    String origJson = JsonUtils.pojoToJson(policy);
+    origJson = JsonUtils.pojoToJson(policy);
     policy.setLocation(locationReference);
-    ChangeDescription change = getChangeDescription(policy.getVersion());
+    change = getChangeDescription(policy.getVersion());
     change.getFieldsAdded().add(new FieldChange().withName("location").withNewValue(locationReference));
     patchEntityAndCheck(policy, origJson, ADMIN_AUTH_HEADERS, MINOR_UPDATE, change);
   }

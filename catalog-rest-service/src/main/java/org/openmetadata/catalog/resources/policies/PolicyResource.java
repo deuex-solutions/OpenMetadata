@@ -460,7 +460,10 @@ public class PolicyResource extends EntityResource<Policy, PolicyRepository> {
 
   private Policy getPolicy(CreatePolicy create, String user) {
     Policy policy =
-        copy(new Policy(), create, user).withPolicyType(create.getPolicyType()).withRules(create.getRules());
+        copy(new Policy(), create, user)
+            .withPolicyType(create.getPolicyType())
+            .withRules(create.getRules())
+            .withEnabled(create.getEnabled());
     if (create.getLocation() != null) {
       policy = policy.withLocation(new EntityReference().withId(create.getLocation()));
     }
