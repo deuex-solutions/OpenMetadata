@@ -281,6 +281,7 @@ const MyDataPage = () => {
       });
     }
 
+    // clean the socket connection
     return () => {
       socket && socket.off(SOCKET_EVENTS.ACTIVITY_FEED);
       socket && socket.off(SOCKET_EVENTS.TASK_CHANNEL);
