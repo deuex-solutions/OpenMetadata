@@ -76,6 +76,7 @@ jobs:
       with:
         hide-comment: true
         coverage-summary-path: ${{env.UI_COVERAGE_DIRECTORY}}/coverage-final.json
+         coverage-path: ${{env.UI_COVERAGE_DIRECTORY}}/coverage.txt
     - name: yarn add sonarqube-scanner
       working-directory: ${{ env.UI_WORKING_DIRECTORY }}
       run: npm install -g sonarqube-scanner

@@ -23,6 +23,7 @@ module.exports = {
 
   // Test coverage
   coverageDirectory: '<rootDir>/src/test/unit/coverage',
+  coverageReporters: ['json', 'text'],
   collectCoverageFrom: [
     '<rootDir>/src/**/*.{ts,tsx,js,jsx}', // All files in subdirectories under src/app
     '!<rootDir>/src/*', // Exclude files directly under src/app
