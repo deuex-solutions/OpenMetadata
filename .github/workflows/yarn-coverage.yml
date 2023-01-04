@@ -57,11 +57,8 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: ${{ matrix.node-version }}
-      - name: Install Ubuntu dependencies
+      - name: Install Antlr4 CLI
         run: |
-          sudo apt-get update
-          sudo apt-get install -y unixodbc-dev python3-venv librdkafka-dev gcc libsasl2-dev build-essential libssl-dev libffi-dev \
-          librdkafka-dev unixodbc-dev libevent-dev
           sudo make install_antlr_cli
       - name: Install Yarn Packages
         working-directory: ${{ env.UI_WORKING_DIRECTORY }}
@@ -73,7 +70,6 @@ jobs:
       - name: Jest Coverage Comment
         uses: MishaKav/jest-coverage-comment@main
         with:
-          hide-comment: true
           coverage-summary-path: ${{env.UI_COVERAGE_DIRECTORY}}/coverage-final.json
       - name: yarn add sonarqube-scanner
         working-directory: ${{ env.UI_WORKING_DIRECTORY }}
