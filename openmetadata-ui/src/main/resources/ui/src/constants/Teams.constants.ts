@@ -15,6 +15,7 @@ import DraggableBodyRow from '@components/TeamDetails/DraggableBodyRow';
 
 export const DRAGGABLE_BODY_ROW = 'DraggableBodyRow';
 
+// Represents table constants
 export const TABLE_CONSTANTS = {
   body: {
     row: DraggableBodyRow,
