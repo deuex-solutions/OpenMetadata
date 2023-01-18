@@ -12,8 +12,9 @@
  */
 
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { Space, Typography } from 'antd';
+import { Space, Switch, Typography } from 'antd';
 import classNames from 'classnames';
+import Tags from 'components/Tag/Tags/tags';
 import { cloneDeep } from 'lodash';
 import { EntityTags } from 'Models';
 import React, { useRef, useState } from 'react';
@@ -32,7 +33,6 @@ import TitleBreadcrumb from '../common/title-breadcrumb/title-breadcrumb.compone
 import PageLayout from '../containers/PageLayout';
 import Loader from '../Loader/Loader';
 import ReviewerModal from '../Modals/ReviewerModal/ReviewerModal.component';
-import Tags from '../tags/tags';
 import { AddGlossaryError, AddGlossaryProps } from './AddGlossary.interface';
 
 const Field = ({ children }: { children: React.ReactNode }) => {
@@ -60,6 +60,7 @@ const AddGlossary = ({
   const [description] = useState<string>('');
   const [showReviewerModal, setShowReviewerModal] = useState(false);
   const [tags, setTags] = useState<EntityTags[]>([]);
+  const [mutuallyExclusive, setMutuallyExclusive] = useState(false);
   const [reviewer, setReviewer] = useState<Array<EntityReference>>([]);
 
   const getDescription = () => {
@@ -129,6 +130,7 @@ const AddGlossary = ({
           type: 'user',
         },
         tags: tags,
+        mutuallyExclusive,
       };
 
       onSave(data);
@@ -241,6 +243,23 @@ const AddGlossary = ({
               <AddTags
                 data-testid="tags"
                 setTags={(tag: EntityTags[]) => setTags(tag)}
+              />
+            </Space>
+          </Field>
+
+          <Field>
+            <Space align="end">
+              <label
+                className="tw-form-label m-b-0 tw-mb-1"
+                data-testid="mutually-exclusive-label"
+                htmlFor="mutuallyExclusive">
+                {t('label.mutually-exclusive')}
+              </label>
+              <Switch
+                checked={mutuallyExclusive}
+                data-testid="mutually-exclusive-button"
+                id="mutuallyExclusive"
+                onChange={(value) => setMutuallyExclusive(value)}
               />
             </Space>
           </Field>
