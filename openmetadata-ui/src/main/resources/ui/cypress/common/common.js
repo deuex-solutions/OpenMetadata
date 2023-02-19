@@ -337,7 +337,11 @@ export const editOwnerforCreatedService = (
     'waitForIngestion'
   );
 
-  interceptURL('GET', '/api/v1/config/airflow', 'airflow');
+  interceptURL(
+    'GET',
+    '/api/v1/system/config/pipeline-service-client',
+    'airflow'
+  );
   // click on created service
   cy.get(`[data-testid="service-name-${service_Name}"]`)
     .should('exist')
@@ -618,7 +622,7 @@ export const restoreUser = (username) => {
     .should('be.visible')
     .click();
   verifyResponseStatusCode('@restoreUser', 200);
-  toastNotification('User restored successfully!');
+  toastNotification('User restored successfully');
 
   // Verifying the restored user
   cy.get('.ant-switch').should('exist').should('be.visible').click();
@@ -805,7 +809,7 @@ export const deleteCreatedProperty = (propertyName) => {
     .should('be.visible');
 };
 
-export const updateOwner = () => {
+export const updateOwner = (isAddingOwnerToTeam = false) => {
   cy.get('[data-testid="avatar"]').should('be.visible').click();
   cy.get('[data-testid="user-name"]')
     .should('exist')
@@ -822,12 +826,14 @@ export const updateOwner = () => {
 
       verifyResponseStatusCode('@getTeams', 200);
 
-      // Clicking on users tab
-      cy.get('button[data-testid="dropdown-tab"]')
-        .should('exist')
-        .should('be.visible')
-        .contains('Users')
-        .click();
+      if (!isAddingOwnerToTeam) {
+        // Clicking on users tab
+        cy.get('button[data-testid="dropdown-tab"]')
+          .should('exist')
+          .should('be.visible')
+          .contains('Users')
+          .click();
+      }
 
       cy.get('[data-testid="list-item"]')
         .first()
@@ -983,7 +989,11 @@ export const updateDescriptionForIngestedTables = (
     `/api/v1/services/ingestionPipelines?fields=owner,pipelineStatuses&service=${serviceName}`,
     'getSelectedService'
   );
-  interceptURL('GET', '/api/v1/config/airflow', 'airflow');
+  interceptURL(
+    'GET',
+    '/api/v1/system/config/pipeline-service-client',
+    'airflow'
+  );
 
   // click on created service
   cy.get(`[data-testid="service-name-${serviceName}"]`)

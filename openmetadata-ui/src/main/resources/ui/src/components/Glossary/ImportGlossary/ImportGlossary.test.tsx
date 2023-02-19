@@ -30,7 +30,7 @@ let mockCsvImportResult = {
   numberOfRowsProcessed: 3,
   numberOfRowsPassed: 3,
   numberOfRowsFailed: 0,
-  importResultsCsv: `status,details,parent,name*,displayName,description*,synonyms,relatedTerms,references,tags\r
+  importResultsCsv: `status,details,parent,name*,displayName,description,synonyms,relatedTerms,references,tags\r
   success,Entity updated,,Glossary2 Term,Glossary2 Term displayName,Description for Glossary2 Term,,,,\r
   success,Entity updated,,Glossary2 term2,Glossary2 term2,Description data.,,,,\r`,
 } as CSVImportResult;
@@ -71,12 +71,16 @@ jest.mock('react-router-dom', () => ({
 }));
 
 jest.mock('utils/RouterUtils', () => ({
-  getGlossaryPath: jest.fn().mockImplementation(() => 'glossary-path'),
+  getGlossaryPath: jest.fn().mockImplementation((fqn) => `/glossary/${fqn}`),
 }));
 
 jest.mock('utils/ToastUtils', () => ({
   showErrorToast: jest.fn(),
 }));
+
+jest.mock('components/IngestionStepper/IngestionStepper.component', () =>
+  jest.fn().mockReturnValue(<div data-testid="stepper">Stepper</div>)
+);
 
 describe('Import Glossary', () => {
   it('Should render the all components', async () => {
@@ -86,14 +90,31 @@ describe('Import Glossary', () => {
     const title = await screen.getByTestId('title');
     const uploader = await screen.getByTestId('upload-file-widget');
     const uploadButton = await screen.getByTestId('upload-button');
+    const stepper = await screen.getByTestId('stepper');
+    const cancelBtn = await screen.findByTestId('cancel-button');
 
     expect(breadcrumb).toBeInTheDocument();
     expect(title).toBeInTheDocument();
     expect(uploader).toBeInTheDocument();
     expect(uploadButton).toBeInTheDocument();
+    expect(stepper).toBeInTheDocument();
+    expect(cancelBtn).toBeInTheDocument();
   });
 
-  it('Import Should work', async () => {
+  it('Cancel button should work', async () => {
+    render(<ImportGlossary glossaryName={glossaryName} />);
+    const cancelBtn = await screen.findByTestId('cancel-button');
+
+    expect(cancelBtn).toBeInTheDocument();
+
+    act(() => {
+      fireEvent.click(cancelBtn);
+    });
+
+    expect(mockPush).toHaveBeenCalledWith(`/glossary/${glossaryName}`);
+  });
+
+  it('Import should work for success csv file scenario', async () => {
     const file = new File([mockCsvContent], 'glossary-terms.csv', {
       type: 'text/plain',
     });
@@ -114,26 +135,29 @@ describe('Import Glossary', () => {
       await flushPromises();
     });
 
-    const successBadge = await screen.getByTestId('success-badge');
-    const cancelButton = await screen.getByTestId('cancel-button');
-    const previewButton = await screen.getByTestId('preview-button');
-    const fileName = await screen.getByTestId('file-name');
+    const importButton = await screen.findByTestId('import-button');
+
+    expect(await screen.findByTestId('import-results')).toBeInTheDocument();
+    expect(importButton).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.click(importButton);
+    });
+
+    const successBadge = await screen.findByTestId('success-badge');
+    const previewButton = await screen.findByTestId('preview-button');
+    const fileName = await screen.findByTestId('file-name');
 
     expect(successBadge).toBeInTheDocument();
-    expect(cancelButton).toBeInTheDocument();
     expect(previewButton).toBeInTheDocument();
     expect(fileName).toHaveTextContent('glossary-terms.csv');
-
-    // preview should work
 
     await act(async () => {
       userEvent.click(previewButton);
     });
 
-    const importButton = await screen.getByTestId('import-button');
-
-    expect(await screen.getByTestId('import-results')).toBeInTheDocument();
-    expect(importButton).toBeInTheDocument();
+    // once successfully imported redirect to glossary page
+    expect(mockPush).toHaveBeenCalledWith(`/glossary/${glossaryName}`);
   });
 
   it('Import Should work for partial success', async () => {
@@ -162,26 +186,29 @@ describe('Import Glossary', () => {
       await flushPromises();
     });
 
-    const successBadge = await screen.getByTestId('success-badge');
-    const cancelButton = await screen.getByTestId('cancel-button');
-    const previewButton = await screen.getByTestId('preview-button');
-    const fileName = await screen.getByTestId('file-name');
+    const importButton = await screen.findByTestId('import-button');
+
+    expect(await screen.findByTestId('import-results')).toBeInTheDocument();
+    expect(importButton).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.click(importButton);
+    });
+
+    const successBadge = await screen.findByTestId('success-badge');
+    const previewButton = await screen.findByTestId('preview-button');
+    const fileName = await screen.findByTestId('file-name');
 
     expect(successBadge).toBeInTheDocument();
-    expect(cancelButton).toBeInTheDocument();
     expect(previewButton).toBeInTheDocument();
     expect(fileName).toHaveTextContent('glossary-terms.csv');
-
-    // preview should work
 
     await act(async () => {
       userEvent.click(previewButton);
     });
 
-    const importButton = await screen.getByTestId('import-button');
-
-    expect(await screen.getByTestId('import-results')).toBeInTheDocument();
-    expect(importButton).toBeInTheDocument();
+    // once terms Partially imported redirect to glossary page
+    expect(mockPush).toHaveBeenCalledWith(`/glossary/${glossaryName}`);
   });
 
   it('Import Should not work for failure', async () => {
@@ -207,30 +234,17 @@ describe('Import Glossary', () => {
       await flushPromises();
     });
 
-    // for in correct data should show the failure badge
-    const failureBadge = await screen.getByTestId('failure-badge');
-
-    const cancelButton = await screen.getByTestId('cancel-button');
-    const previewButton = await screen.getByTestId('preview-button');
-    const fileName = await screen.getByTestId('file-name');
-
-    expect(failureBadge).toBeInTheDocument();
-    expect(cancelButton).toBeInTheDocument();
-    expect(previewButton).toBeInTheDocument();
-    expect(fileName).toBeInTheDocument();
-
-    // preview should work
-
-    await act(async () => {
-      userEvent.click(previewButton);
-    });
-
     const importButton = screen.queryByTestId('import-button');
+    const cancelPreviewButton = await screen.getByTestId(
+      'preview-cancel-button'
+    );
 
     expect(await screen.getByTestId('import-results')).toBeInTheDocument();
 
     // for failure import button should not render
     expect(importButton).not.toBeInTheDocument();
+
+    expect(cancelPreviewButton).toBeInTheDocument();
   });
 
   it('Import Should not work for aborted', async () => {
