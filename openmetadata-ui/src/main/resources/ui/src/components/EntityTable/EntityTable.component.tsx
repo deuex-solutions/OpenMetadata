@@ -11,7 +11,7 @@
  *  limitations under the License.
  */
 
-import { Popover, Table, Typography } from 'antd';
+import { Popover, Space, Table, Typography } from 'antd';
 import { ColumnsType } from 'antd/lib/table';
 import classNames from 'classnames';
 import { cloneDeep, isEmpty, isUndefined, lowerCase, toLower } from 'lodash';
@@ -609,13 +609,15 @@ const EntityTable = ({
         dataIndex: 'name',
         key: 'name',
         accessor: 'name',
-        ellipsis: true,
-        width: 220,
+        width: 300,
         render: (name: Column['name'], record: Column) => (
-          <Popover destroyTooltipOnHide content={name} trigger="hover">
+          <Space
+            align="start"
+            className="w-max-90 vertical-align-inherit"
+            size={2}>
             {prepareConstraintIcon(name, record.constraint, tableConstraints)}
-            <span>{name}</span>
-          </Popover>
+            <span className="break-word">{name}</span>
+          </Space>
         ),
       },
       {

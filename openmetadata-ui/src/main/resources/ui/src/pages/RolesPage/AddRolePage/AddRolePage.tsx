@@ -78,10 +78,8 @@ const AddRolePage = () => {
     const data = {
       name: trim(name),
       description,
-      policies: selectedPolicies.map((policy) => ({
-        id: policy,
-        type: 'policy',
-      })),
+      // TODO the policies should be names instead of ID
+      policies: selectedPolicies.map((policy) => policy),
     };
 
     try {
@@ -173,7 +171,7 @@ const AddRolePage = () => {
                   value={selectedPolicies}
                   onChange={(values) => setSelectedPolicies(values)}>
                   {policies.map((policy) => (
-                    <Option key={policy.id}>
+                    <Option key={policy.fullyQualifiedName}>
                       {policy.displayName || policy.name}
                     </Option>
                   ))}
@@ -201,7 +199,9 @@ const AddRolePage = () => {
 
         <div className="m-t-xlg p-l-lg w-max-400">
           <Typography.Paragraph className="text-base font-medium">
-            {t('label.add-role')}
+            {t('label.add-entity', {
+              entity: t('label.role'),
+            })}
           </Typography.Paragraph>
           <Typography.Text>{t('message.add-role-message')}</Typography.Text>
         </div>

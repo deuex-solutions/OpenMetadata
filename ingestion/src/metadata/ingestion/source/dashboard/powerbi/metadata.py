@@ -16,7 +16,7 @@ from typing import Any, Iterable, List, Optional
 from metadata.generated.schema.api.data.createChart import CreateChartRequest
 from metadata.generated.schema.api.data.createDashboard import CreateDashboardRequest
 from metadata.generated.schema.api.lineage.addLineage import AddLineageRequest
-from metadata.generated.schema.entity.data.chart import ChartType
+from metadata.generated.schema.entity.data.chart import Chart, ChartType
 from metadata.generated.schema.entity.data.dashboard import Dashboard
 from metadata.generated.schema.entity.data.table import Table
 from metadata.generated.schema.entity.services.connections.dashboard.powerBIConnection import (
@@ -28,7 +28,6 @@ from metadata.generated.schema.entity.services.connections.metadata.openMetadata
 from metadata.generated.schema.metadataIngestion.workflow import (
     Source as WorkflowSource,
 )
-from metadata.generated.schema.type.entityReference import EntityReference
 from metadata.ingestion.api.source import InvalidSourceException, SourceStatus
 from metadata.ingestion.source.dashboard.dashboard_service import DashboardServiceSource
 from metadata.utils import fqn
@@ -56,7 +55,10 @@ class PowerbiSource(DashboardServiceSource):
     ):
 
         super().__init__(config, metadata_config)
-        self.workspace_data = {}
+        self.pagination_entity_per_page = min(
+            100, self.service_connection.pagination_entity_per_page
+        )
+        self.workspace_data = []
 
     def prepare(self):
         # fetch all the workspace ids
@@ -65,20 +67,34 @@ class PowerbiSource(DashboardServiceSource):
             workspace_id_list = [workspace.get("id") for workspace in workspaces]
 
             # Start the scan of the available workspaces for dashboard metadata
-            workspace_scan = self.client.initiate_workspace_scan(workspace_id_list)
-            workspace_scan_id = workspace_scan.get("id")
+            workspace_paginated_list = [
+                workspace_id_list[i : i + self.pagination_entity_per_page]
+                for i in range(
+                    0, len(workspace_id_list), self.pagination_entity_per_page
+                )
+            ]
+            count = 1
+            for workspace_ids_chunk in workspace_paginated_list:
+                logger.info(
+                    f"Scanning {count}/{len(workspace_paginated_list)} set of workspaces"
+                )
+                workspace_scan = self.client.initiate_workspace_scan(
+                    workspace_ids_chunk
+                )
+                workspace_scan_id = workspace_scan.get("id")
 
-            # Keep polling the scan status endpoint to check if scan is succeeded
-            workspace_scan_status = self.client.wait_for_scan_complete(
-                scan_id=workspace_scan_id
-            )
-            if workspace_scan_status:
-                response = self.client.fetch_workspace_scan_result(
+                # Keep polling the scan status endpoint to check if scan is succeeded
+                workspace_scan_status = self.client.wait_for_scan_complete(
                     scan_id=workspace_scan_id
                 )
-                self.workspace_data = response.get("workspaces")
-            else:
-                logger.error("Error in fetching dashboards and charts")
+                if workspace_scan_status:
+                    response = self.client.fetch_workspace_scan_result(
+                        scan_id=workspace_scan_id
+                    )
+                    self.workspace_data.extend(response.get("workspaces"))
+                else:
+                    logger.error("Error in fetching dashboards and charts")
+                count += 1
         else:
             logger.error("Unable to fetch any Powerbi workspaces")
         return super().prepare()
@@ -156,12 +172,15 @@ class PowerbiSource(DashboardServiceSource):
             displayName=dashboard_details["displayName"],
             description="",
             charts=[
-                EntityReference(id=chart.id.__root__, type="chart")
+                fqn.build(
+                    self.metadata,
+                    entity_type=Chart,
+                    service_name=self.context.dashboard_service.fullyQualifiedName.__root__,
+                    chart_name=chart.name.__root__,
+                )
                 for chart in self.context.charts
             ],
-            service=EntityReference(
-                id=self.context.dashboard_service.id.__root__, type="dashboardService"
-            ),
+            service=self.context.dashboard_service.fullyQualifiedName.__root__,
         )
 
     def yield_dashboard_lineage_details(
@@ -246,10 +265,7 @@ class PowerbiSource(DashboardServiceSource):
                     chartType=ChartType.Other.value,
                     # PBI has no hostPort property. All URL details are present in the webUrl property.
                     chartUrl=chart_url,
-                    service=EntityReference(
-                        id=self.context.dashboard_service.id.__root__,
-                        type="dashboardService",
-                    ),
+                    service=self.context.dashboard_service.fullyQualifiedName.__root__,
                 )
                 self.status.scanned(chart_display_name)
             except Exception as exc:  # pylint: disable=broad-except
